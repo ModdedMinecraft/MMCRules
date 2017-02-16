@@ -40,7 +40,7 @@ public class PlayerListener {
     public void beforeCommand(SendCommandEvent event, @Root Player player) {
         if (Config.blockCommandsBeforeAccept) {
             String command = event.getCommand().toLowerCase();
-            if (command.equals("acceptrules") || command.equals("rules") || command.equals("sponge")) {
+            if (command.equals("acceptrules") || command.equals("rules") || command.equals("sponge") || command.equals("pagination")) {
                 return;
             } else {
                 event.setCancelled(checkForAccepted(player, Config.informMsg));
