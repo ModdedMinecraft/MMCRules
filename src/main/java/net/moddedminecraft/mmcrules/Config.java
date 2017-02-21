@@ -75,8 +75,8 @@ public class Config {
         mustReadRulesMsg = check(config.getNode("messages", "mustReadRules"), mustReadRulesMsg).getString();
         acceptedAlreadyMsg = check(config.getNode("messages", "acceptedAlready"), acceptedAlreadyMsg).getString();
         cantBuildMsg = check(config.getNode("messages", "cantBuild"), cantBuildMsg).getString();
-        cantBuildMsg = check(config.getNode("messages", "cantBuild"), cantBuildMsg).getString();
         informMsg = check(config.getNode("messages", "inform"), informMsg).getString();
+        chatPrefix = check(config.getNode("messages", "prefix"), chatPrefix, "The prefix of messages sent in chat").getString();
 
         //restrictions
         blockBuildBeforeAccept = check(config.getNode("restrictions", "blockBuildBeforeAccept"), blockBuildBeforeAccept, "Should players be blocked from placing and breaking blocks before reading the rules?").getBoolean();
