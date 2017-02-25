@@ -13,9 +13,13 @@ import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.service.pagination.PaginationList;
 import org.spongepowered.api.service.pagination.PaginationService;
 import org.spongepowered.api.text.Text;
+import org.spongepowered.api.text.action.TextActions;
 
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
 public class rulesCMD implements CommandExecutor {
 
@@ -29,6 +33,28 @@ public class rulesCMD implements CommandExecutor {
 
         List<String> rules = Config.ruleList;
         List<Text> contents = new ArrayList<>();
+
+        if (!Config.listHeader.isEmpty()) {
+            Text.Builder send = Text.builder();
+            send.append(plugin.fromLegacy(Config.listHeader));
+            if (!Config.listHeaderHover.isEmpty()) {
+                send.onHover(TextActions.showText(plugin.fromLegacy(Config.listHeaderHover)));
+            }
+            if (!Config.listHeaderURL.isEmpty()) {
+                URL url = null;
+                try {
+                    url = new URL(Config.listHeaderURL);
+                } catch (MalformedURLException e) {
+                    e.printStackTrace();
+                }
+                if (url != null) {
+                    send.onClick(TextActions.openUrl(url));
+                } else {
+                    send.onClick(TextActions.executeCallback(invalid()));
+                }
+            }
+            contents.add(send.build());
+        }
 
         for (int i = 0; i < rules.size(); i++) {
             if (rules.get(i).equals("") && rules.size() <= 1) {
@@ -57,5 +83,11 @@ public class rulesCMD implements CommandExecutor {
         pb.sendTo(src);
 
         return CommandResult.success();
+    }
+
+    private Consumer<CommandSource> invalid() {
+        return consumer -> {
+            plugin.sendMessage(consumer, "&4URL is invalid, Please report this to an admin.");
+        };
     }
 }

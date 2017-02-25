@@ -34,6 +34,9 @@ public class Config {
     public static String rulesTitle = "Rules";
     public static List<String> playerCommands;
     public static List<String> consoleCommands;
+    public static String listHeader;
+    public static String listHeaderURL;
+    public static String listHeaderHover;
 
     //messages
     public static String acceptedMsg = "&cYou have successfully accepted the &6rules&c! Have fun!";
@@ -84,11 +87,14 @@ public class Config {
         blockCommandsBeforeAccept = check(config.getNode("restrictions", "blockCommandsBeforeAccept"), blockCommandsBeforeAccept, "Should players be blocked from sending commands before reading the rules?").getBoolean();
 
         //rules
+        listHeader = check(config.getNode("rules", "header", "message"), "", "This text is displayed above the rules in /rules").getString();
+        listHeaderURL = check(config.getNode("rules", "header", "url"), "", "When players click the text set in message, they will be prompted to this URL (Must have http:// or https:// at the beginning)").getString();
+        listHeaderHover = check(config.getNode("rules", "header", "hover"), "", "This message will be displayed when the player hovers over the header message.").getString();
 
         if (config.getNode("rules", "list").hasListChildren()) {
             ruleList = Lists.newArrayList(config.getNode("rules", "list").getList(TypeToken.of(String.class)));
         } else {
-            ruleList = config.getNode("rules", "list").setValue(ruleList).setComment("Commands to be run after the player accepts the rules, These commands are sent by the console ({player} will be replaced by the player's name").getList(TypeToken.of(String.class));
+            ruleList = config.getNode("rules", "list").setValue(ruleList).setComment("Commands to be run after the player accepts the rules, These commands are sent by the console ({player} will be replaced by the player's name)").getList(TypeToken.of(String.class));
         }
 
 
@@ -100,9 +106,9 @@ public class Config {
             playerCommands = config.getNode("rules", "onAccept", "playerCommands").setValue(Collections.emptyList()).setComment("Commands to be run after the player accepts the rules, These commands are sent by the player").getList(TypeToken.of(String.class));
         }
         if (config.getNode("rules", "onAccept", "consoleCommands").hasListChildren()) {
-            consoleCommands = check(config.getNode("rules", "onAccept", "consoleCommands"), Collections.emptyList(), "Commands to be run after the player accepts the rules, These commands are sent by the console ({player} will be replaced by the player's name").getList(TypeToken.of(String.class));
+            consoleCommands = check(config.getNode("rules", "onAccept", "consoleCommands"), Collections.emptyList(), "Commands to be run after the player accepts the rules, These commands are sent by the console ({player} will be replaced by the player's name)").getList(TypeToken.of(String.class));
         } else {
-            consoleCommands = config.getNode("rules", "onAccept", "consoleCommands").setValue(Collections.emptyList()).setComment("Commands to be run after the player accepts the rules, These commands are sent by the console ({player} will be replaced by the player's name").getList(TypeToken.of(String.class));
+            consoleCommands = config.getNode("rules", "onAccept", "consoleCommands").setValue(Collections.emptyList()).setComment("Commands to be run after the player accepts the rules, These commands are sent by the console ({player} will be replaced by the player's name)").getList(TypeToken.of(String.class));
         }
         loader.save(config);
     }
