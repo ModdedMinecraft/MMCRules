@@ -35,7 +35,7 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
-@Plugin(id = "mmcrules", name = "MMCRules", version = "1.0.2", description = "Force players to read and accept the rules.")
+@Plugin(id = "mmcrules", name = "MMCRules", version = "1.1", description = "Force players to read and accept the rules.")
 public class Main {
 
     @Inject
