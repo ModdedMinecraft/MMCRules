@@ -27,6 +27,7 @@ public class Config {
     }
 
     public static String chatPrefix = "&f[&6MMCRules&f] ";
+    public static String rulesAlias;
 
     //rules
     public static List<String> ruleList = Lists.newArrayList("Be respectful.", "Be ethical.", "Use common sense.");
@@ -64,6 +65,9 @@ public class Config {
         if (!plugin.defaultConfFile.exists()) {
             plugin.defaultConfFile.createNewFile();
         }
+
+        //cmd alias
+        rulesAlias = check(config.getNode("command", "alias"), "", "Command alias for /rules, This will only accept one alias. (Requires server restart to register)").getString();
 
         //teleport
         afterAccept = check(config.getNode("teleport", "afterAccept"), false, "Do you want the player to be teleported to a set location after they /acceptrules (set this with /mmcrules settp)").getBoolean();

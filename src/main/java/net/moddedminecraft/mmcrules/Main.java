@@ -17,6 +17,7 @@ import org.spongepowered.api.command.args.GenericArguments;
 import org.spongepowered.api.command.spec.CommandSpec;
 import org.spongepowered.api.config.ConfigDir;
 import org.spongepowered.api.config.DefaultConfig;
+import org.spongepowered.api.data.key.Keys;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.event.Listener;
@@ -32,10 +33,13 @@ import org.spongepowered.api.text.serializer.TextSerializers;
 
 import java.io.*;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-@Plugin(id = "mmcrules", name = "MMCRules", version = "1.1", description = "Force players to read and accept the rules.")
+@Plugin(id = "mmcrules", name = "MMCRules", version = "1.2", description = "Force players to read and accept the rules.")
 public class Main {
 
     @Inject
@@ -141,7 +145,11 @@ public class Main {
                 .executor(new acceptCMD(this))
                 .build();
 
-        cmdManager.register(this, rules, "rules");
+        if (!Config.rulesAlias.isEmpty()) {
+            cmdManager.register(this, rules, "rules", Config.rulesAlias);
+        } else {
+            cmdManager.register(this, rules, "rules");
+        }
         cmdManager.register(this, acceptRules, "acceptrules");
         cmdManager.register(this, mmcRules, "mmcrules", "mmcr");
     }
