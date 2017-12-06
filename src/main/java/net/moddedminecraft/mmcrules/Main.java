@@ -201,6 +201,19 @@ public class Main {
 
     @Listener
     public void onPlayerLogin(ClientConnectionEvent.Join event, @Root Player player) {
+        if (Config.vanishBeforeAccept) {
+            if (!getAcceptedPlayers().contains(player.getUniqueId().toString())) {
+                Sponge.getScheduler().createTaskBuilder().execute(new Runnable() {
+
+                    public void run() {
+                        player.offer(Keys.INVISIBLE, true);
+                        player.offer(Keys.VANISH_IGNORES_COLLISION, true);
+                        player.offer(Keys.VANISH_PREVENTS_TARGETING, true);
+                    }
+                }).delay(1, TimeUnit.SECONDS).name("mmcrules-s-setPlayerInvisible").submit(this);
+            }
+        }
+
         if (Config.informOnLogin) {
             if (getAcceptedPlayers().contains(player.getUniqueId().toString())) {
                 return;

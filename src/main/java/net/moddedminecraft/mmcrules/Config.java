@@ -49,6 +49,7 @@ public class Config {
     public static boolean blockBuildBeforeAccept = false;
     public static boolean blockMovementBeforeAccept = false;
     public static boolean blockCommandsBeforeAccept = false;
+    public static boolean vanishBeforeAccept = false;
 
     //teleport
     public static boolean afterAccept = false;
@@ -85,6 +86,7 @@ public class Config {
         blockBuildBeforeAccept = check(config.getNode("restrictions", "blockBuildBeforeAccept"), blockBuildBeforeAccept, "Should players be blocked from placing and breaking blocks before reading the rules?").getBoolean();
         blockMovementBeforeAccept = check(config.getNode("restrictions", "blockMovementBeforeAccept"), blockMovementBeforeAccept, "Should players be blocked from moving before reading the rules?").getBoolean();
         blockCommandsBeforeAccept = check(config.getNode("restrictions", "blockCommandsBeforeAccept"), blockCommandsBeforeAccept, "Should players be blocked from sending commands before reading the rules?").getBoolean();
+        vanishBeforeAccept = check(config.getNode("restrictions", "vanishBeforeAccept"), vanishBeforeAccept, "Should players be invisible to all players before reading the rules?").getBoolean();
 
         //rules
         listHeader = check(config.getNode("rules", "header", "message"), "", "This text is displayed above the rules in /rules").getString();

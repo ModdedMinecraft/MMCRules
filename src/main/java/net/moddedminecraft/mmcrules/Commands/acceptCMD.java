@@ -10,6 +10,7 @@ import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
+import org.spongepowered.api.data.key.Keys;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
@@ -40,6 +41,9 @@ public class acceptCMD implements CommandExecutor {
             plugin.saveUser(player.getUniqueId().toString());
             plugin.getAcceptedPlayers().add(player.getUniqueId().toString());
             plugin.sendMessage(player, Config.chatPrefix + Config.acceptedMsg);
+            player.offer(Keys.INVISIBLE, false);
+            player.offer(Keys.VANISH_IGNORES_COLLISION, false);
+            player.offer(Keys.VANISH_PREVENTS_TARGETING, false);
 
             if (Config.afterAccept) {
                 Optional<World> worldOpt = Sponge.getServer().getWorld(Config.world);
