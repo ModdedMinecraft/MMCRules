@@ -39,7 +39,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-@Plugin(id = "mmcrules", name = "MMCRules", version = "1.2", description = "Force players to read and accept the rules.")
+@Plugin(id = "mmcrules", name = "MMCRules", version = "1.2.1", description = "Force players to read and accept the rules.")
 public class Main {
 
     @Inject
