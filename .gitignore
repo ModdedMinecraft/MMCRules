@@ -30,3 +30,7 @@ buildNumber.properties
 *.iml
 pom.xml
 *.sig
+
+## gradle ##
+/build/
+/.gradle/
