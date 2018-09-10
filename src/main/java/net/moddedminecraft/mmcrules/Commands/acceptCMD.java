@@ -33,13 +33,12 @@ public class acceptCMD implements CommandExecutor {
             throw new CommandException(plugin.fromLegacy("You can only use this command as a player!"));
         }
         Player player = (Player) src;
-        if (plugin.getAcceptedPlayers().contains(player.getUniqueId().toString())) {
+        if (plugin.getDataStore().getAccepted().contains(player.getUniqueId().toString())) {
             throw new CommandException(plugin.fromLegacy(Config.chatPrefix + Config.acceptedAlreadyMsg));
         }
 
         if (plugin.getUsersWhoReadRules().contains(player.getName())) {
-            plugin.saveUser(player.getUniqueId().toString());
-            plugin.getAcceptedPlayers().add(player.getUniqueId().toString());
+            plugin.getDataStore().addPlayer(player.getUniqueId().toString());
             plugin.sendMessage(player, Config.chatPrefix + Config.acceptedMsg);
             player.offer(Keys.INVISIBLE, false);
             player.offer(Keys.VANISH_IGNORES_COLLISION, false);
@@ -59,7 +58,7 @@ public class acceptCMD implements CommandExecutor {
                 Vector3d vect = new Vector3d(Config.pitch, Config.yaw, 0);
 
                 if (loc.getX() == 0 && loc.getY() == 0 && loc.getZ() == 0) {
-                    plugin.logger.info("No teleport location has been set yet. Please do so using /mmcrules settp");
+                    plugin.getLogger().info("No teleport location has been set yet. Please do so using /mmcrules settp");
                     if (player.hasPermission("mmcrules.commands.settp")) {
                         plugin.sendMessage(player, Config.chatPrefix + "No teleport location has been set yet. Please do so using /mmcrules settp");
                     }

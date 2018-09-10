@@ -24,7 +24,7 @@ public class acceptFor implements CommandExecutor {
         if (player == null) {
             throw new CommandException(plugin.fromLegacy(Config.chatPrefix + "Player by that name not found. (is he online?)"));
         }
-        if (plugin.getAcceptedPlayers().contains(player.getUniqueId().toString())) {
+        if (plugin.getDataStore().getAccepted().contains(player.getUniqueId().toString())) {
             throw new CommandException(plugin.fromLegacy(Config.chatPrefix + player.getName()+ " has already accepted the rules!"));
         }
         Sponge.getCommandManager().process(player, "acceptrules");

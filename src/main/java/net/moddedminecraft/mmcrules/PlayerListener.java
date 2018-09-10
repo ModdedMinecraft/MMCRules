@@ -51,7 +51,7 @@ public class PlayerListener {
     @Listener
     public void onEntityMove(MoveEntityEvent event, @Root Player player) {
         if (Config.blockMovementBeforeAccept) {
-            if (plugin.getAcceptedPlayers().contains(player.getUniqueId().toString())) {
+            if (plugin.getDataStore().getAccepted().contains(player.getUniqueId().toString())) {
                 return;
             }
             event.setCancelled(true);
@@ -59,7 +59,7 @@ public class PlayerListener {
     }
 
     private boolean checkForAccepted(Player player, String message) {
-        if (plugin.getAcceptedPlayers().contains(player.getUniqueId().toString())) {
+        if (plugin.getDataStore().getAccepted().contains(player.getUniqueId().toString())) {
             return false;
         }
         plugin.sendMessage(player, Config.chatPrefix + message);

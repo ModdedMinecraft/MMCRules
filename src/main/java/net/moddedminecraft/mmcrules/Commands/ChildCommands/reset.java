@@ -26,11 +26,10 @@ public class reset implements CommandExecutor {
 
         if (op.isPresent()) {
             User player = op.get();
-            if (!plugin.getAcceptedPlayers().contains(player.getUniqueId().toString())) {
+            if (!plugin.getDataStore().getAccepted().contains(player.getUniqueId().toString())) {
                 throw new CommandException(plugin.fromLegacy(Config.chatPrefix + "User with the name " + player.getName() + " either has not been found or hasn't accepted the rules yet"));
             }
-
-            plugin.getAcceptedPlayers().remove(player.getUniqueId().toString());
+            plugin.getDataStore().removePlayer(player.getUniqueId().toString());
             plugin.getUsersWhoReadRules().remove(player.getName());
             plugin.sendMessage(src, Config.chatPrefix + "Player " + player.getName() + " has to re-accept the rules.");
             return CommandResult.success();

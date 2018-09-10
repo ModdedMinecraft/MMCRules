@@ -18,8 +18,7 @@ public class resetall implements CommandExecutor {
     @Override
     public CommandResult execute(CommandSource src, CommandContext args) throws CommandException {
         this.plugin.getUsersWhoReadRules().clear();
-        this.plugin.getAcceptedPlayers().clear();
-        this.plugin.saveUsers();
+        this.plugin.getDataStore().clearList();
         plugin.sendMessage(src, Config.chatPrefix + "All users have been cleared. Everyone has to re-accept the rules.");
         return CommandResult.success();
     }

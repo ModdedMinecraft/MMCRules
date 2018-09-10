@@ -8,6 +8,8 @@ import net.moddedminecraft.mmcrules.Commands.ChildCommands.setTP;
 import net.moddedminecraft.mmcrules.Commands.acceptCMD;
 import net.moddedminecraft.mmcrules.Commands.mmcRulesCMD;
 import net.moddedminecraft.mmcrules.Commands.rulesCMD;
+import net.moddedminecraft.mmcrules.Database.DataStoreManager;
+import net.moddedminecraft.mmcrules.Database.IDataStore;
 import ninja.leaping.configurate.objectmapping.ObjectMappingException;
 import org.slf4j.Logger;
 import org.spongepowered.api.Sponge;
@@ -23,6 +25,7 @@ import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.filter.cause.Root;
 import org.spongepowered.api.event.game.GameReloadEvent;
+import org.spongepowered.api.event.game.state.GameAboutToStartServerEvent;
 import org.spongepowered.api.event.game.state.GameInitializationEvent;
 import org.spongepowered.api.event.game.state.GameStartedServerEvent;
 import org.spongepowered.api.event.network.ClientConnectionEvent;
@@ -31,7 +34,8 @@ import org.spongepowered.api.service.user.UserStorageService;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.serializer.TextSerializers;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -43,7 +47,7 @@ import java.util.concurrent.TimeUnit;
 public class Main {
 
     @Inject
-    public Logger logger;
+    private Logger logger;
 
     @Inject
     private Metrics metrics;
@@ -64,10 +68,11 @@ public class Main {
 
     public Config config;
 
+    private DataStoreManager dataStoreManager;
+
     private CommandManager cmdManager = Sponge.getCommandManager();
 
     public List<String> readRules = new ArrayList<String>();
-    public List<String> acceptedRules = new ArrayList<String>();
 
     @Listener
     public void Init(GameInitializationEvent event) throws IOException, ObjectMappingException {
@@ -75,7 +80,16 @@ public class Main {
         config = new Config(this);
         loadCommands();
         userFile = new File(configDir.toFile(), "users.dat");
-        loadUsers();
+    }
+
+    @Listener
+    public void onServerAboutStart(GameAboutToStartServerEvent event) {
+        dataStoreManager = new DataStoreManager(this);
+        if (dataStoreManager.load()) {
+            getLogger().info("MMCRules datastore Loaded");
+        } else {
+            getLogger().error("Unable to load a datastore please check your Console/Config!");
+        }
     }
 
     @Listener
@@ -86,9 +100,8 @@ public class Main {
     @Listener
     public void onPluginReload(GameReloadEvent event) throws IOException, ObjectMappingException {
         getUsersWhoReadRules().clear();
-        getAcceptedPlayers().clear();
         this.config = new Config(this);
-        loadUsers();
+        loadDataStore();
     }
 
     private void loadCommands() {
@@ -154,63 +167,26 @@ public class Main {
         cmdManager.register(this, mmcRules, "mmcrules", "mmcr");
     }
 
-    public List getAcceptedPlayers() {
-        return acceptedRules;
+    public void loadDataStore() {
+        if (dataStoreManager.load()) {
+            getLogger().info("MMCRules datastore Loaded");
+        } else {
+            getLogger().error("Unable to load a datastore please check your Console/Config!");
+        }
     }
 
     public List getUsersWhoReadRules() {
         return readRules;
     }
 
-    public void loadUsers() throws ObjectMappingException, IOException {
-        if (!userFile.exists()) {
-            this.config = new Config(this);
-        }
-        try {
-            BufferedReader reader = new BufferedReader(new FileReader(userFile));
-            String player;
-            while ((player = reader.readLine()) != null) {
-                acceptedRules.add(player);
-            }
-        } catch (IOException ignored) {
-        }
-    }
-
-    public void saveUsers() {
-        BufferedWriter buffwriter;
-        FileWriter filewriter;
-        try {
-            filewriter = new FileWriter(userFile, false);
-            buffwriter = new BufferedWriter(filewriter);
-            for (String user : readRules) {
-                buffwriter.write(user);
-                buffwriter.newLine();
-                buffwriter.flush();
-            }
-            buffwriter.close();
-        } catch (IOException ignored) {
-        }
-    }
-
-    public void saveUser(String name) {
-        BufferedWriter buffwriter;
-        FileWriter filewriter;
-        try {
-            filewriter = new FileWriter(userFile, true);
-            buffwriter = new BufferedWriter(filewriter);
-
-            buffwriter.write(name);
-            buffwriter.newLine();
-            buffwriter.flush();
-            buffwriter.close();
-        } catch (IOException ignored) {
-        }
+    public IDataStore getDataStore() {
+        return dataStoreManager.getDataStore();
     }
 
     @Listener
     public void onPlayerLogin(ClientConnectionEvent.Join event, @Root Player player) {
         if (Config.vanishBeforeAccept) {
-            if (!getAcceptedPlayers().contains(player.getUniqueId().toString())) {
+            if (!getDataStore().getAccepted().contains(player.getUniqueId().toString())) {
                 Sponge.getScheduler().createTaskBuilder().execute(new Runnable() {
 
                     public void run() {
@@ -223,7 +199,7 @@ public class Main {
         }
 
         if (Config.informOnLogin) {
-            if (getAcceptedPlayers().contains(player.getUniqueId().toString())) {
+            if (getDataStore().getAccepted().contains(player.getUniqueId().toString())) {
                 return;
             }
             Sponge.getScheduler().createTaskBuilder().execute(new Runnable() {
@@ -234,9 +210,11 @@ public class Main {
         }
     }
 
+    public Logger getLogger() {
+        return logger;
+    }
 
     public Optional<User> getUser(UUID uuid) {
-        Optional<Player> onlinePlayer = Sponge.getServer().getPlayer(uuid);
         Optional<UserStorageService> userStorage = Sponge.getServiceManager().provide(UserStorageService.class);
         return userStorage.get().get(uuid);
     }

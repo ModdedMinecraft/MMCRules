@@ -61,6 +61,18 @@ public class Config {
     public static Double pitch;
     public static Double yaw;
 
+    //database
+    public static String storageEngine;
+    public static String databaseFile;
+    public static String h2Prefix;
+    public static String mysqlHost;
+    public static int mysqlPort;
+    public static String mysqlDatabase;
+    public static String mysqlUser;
+    public static String mysqlPass;
+    public static String mysqlPrefix;
+    public static String server;
+
     public void configCheck() throws IOException, ObjectMappingException {
         if (!plugin.defaultConfFile.exists()) {
             plugin.defaultConfFile.createNewFile();
@@ -96,6 +108,21 @@ public class Config {
         listHeader = check(config.getNode("rules", "header", "message"), "", "This text is displayed above the rules in /rules").getString();
         listHeaderURL = check(config.getNode("rules", "header", "url"), "", "When players click the text set in message, they will be prompted to this URL (Must have http:// or https:// at the beginning)").getString();
         listHeaderHover = check(config.getNode("rules", "header", "hover"), "", "This message will be displayed when the player hovers over the header message.").getString();
+
+        //server
+        server = check(config.getNode("server"), "Global", "Name of the server. Used for indavidual server identification. If a different name is set, It will check if the player has accepted the rules for that specific server instead of globally.  Default: \"Global\"").getString();
+
+        //database
+        storageEngine = check(config.getNode("storage", "storage-engine"), "h2", "The stoage engine that should be used, Allowed values: h2 or mysql").getString();
+        databaseFile = check(config.getNode("storage", "h2", "database-file"), "Database.db", "Where the databaseFile will be stored. Can be a relative or absolute path. An absolute path is recommended when using this to synchronize over several servers").getString();
+        h2Prefix = check(config.getNode("storage", "h2", "prefix"), "mmcrules_", "Prefix for the plugin tables").getString();
+        mysqlHost = check(config.getNode("storage", "mysql", "host"), "localhost", "Host of the MySQL Server").getString();
+        mysqlPort = check(config.getNode("storage", "mysql", "port"), "3306", "Port of the MySQL server. Default: 3306").getInt();
+        mysqlDatabase = check(config.getNode("storage", "mysql", "database"), "mmcrules", "The database to store in").getString();
+        mysqlUser = check(config.getNode("storage", "mysql", "user"), "root", "The user for the database").getString();
+        mysqlPass = check(config.getNode("storage", "mysql", "password"), "pass", "Password for that user").getString();
+        mysqlPrefix = check(config.getNode("storage", "mysql", "table-prefix"), "mmcrules_", "Prefix for the plugin tables").getString();
+
 
         if (config.getNode("rules", "list").hasListChildren()) {
             ruleList = Lists.newArrayList(config.getNode("rules", "list").getList(TypeToken.of(String.class)));
