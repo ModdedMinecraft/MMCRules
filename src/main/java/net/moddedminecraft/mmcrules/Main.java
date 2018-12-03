@@ -11,6 +11,7 @@ import net.moddedminecraft.mmcrules.Commands.rulesCMD;
 import net.moddedminecraft.mmcrules.Database.DataStoreManager;
 import net.moddedminecraft.mmcrules.Database.IDataStore;
 import ninja.leaping.configurate.objectmapping.ObjectMappingException;
+import org.bstats.sponge.Metrics2;
 import org.slf4j.Logger;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.CommandManager;
@@ -50,7 +51,7 @@ public class Main {
     private Logger logger;
 
     @Inject
-    private Metrics metrics;
+    private Metrics2 metrics;
 
     @Inject
     @DefaultConfig(sharedRoot = false)
