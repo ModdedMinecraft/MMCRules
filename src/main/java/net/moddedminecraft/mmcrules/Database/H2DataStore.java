@@ -109,7 +109,7 @@ public final class H2DataStore implements IDataStore {
         try {
             HikariDataSource ds = new HikariDataSource();
             ds.setDriverClassName("org.h2.Driver");
-            ds.setJdbcUrl("jdbc:h2://" + new File(plugin.defaultConfFile, Config.databaseFile).getAbsolutePath());
+            ds.setJdbcUrl("jdbc:h2://" + new File(plugin.configDir.toFile(), Config.databaseFile).getAbsolutePath());
             ds.setConnectionTimeout(1000);
             ds.setLoginTimeout(5);
             ds.setAutoCommit(true);
