@@ -63,9 +63,9 @@ public class Main {
 
     @Inject
     @ConfigDir(sharedRoot = false)
-    private Path configDir;
+    public Path configDir;
 
-    public File userFile;
+    //public File userFile;
 
     public Config config;
 
@@ -80,7 +80,7 @@ public class Main {
         Sponge.getEventManager().registerListeners(this, new PlayerListener(this));
         config = new Config(this);
         loadCommands();
-        userFile = new File(configDir.toFile(), "users.dat");
+        //userFile = new File(configDir.toFile(), "users.dat");
     }
 
     @Listener
@@ -199,7 +199,7 @@ public class Main {
             }
         }
 
-        if (Config.informOnLogin) {
+        if (Config.informOnLogin && !player.hasPermission("mmcrules.bypass")) {
             if (getDataStore().getAccepted().contains(player.getUniqueId().toString())) {
                 return;
             }

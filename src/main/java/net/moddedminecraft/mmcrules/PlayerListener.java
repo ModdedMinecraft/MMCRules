@@ -59,7 +59,7 @@ public class PlayerListener {
     }
 
     private boolean checkForAccepted(Player player, String message) {
-        if (plugin.getDataStore().getAccepted().contains(player.getUniqueId().toString())) {
+        if ((plugin.getDataStore().getAccepted().contains(player.getUniqueId().toString())) || (player.hasPermission("mmcrules.bypass"))) {
             return false;
         }
         plugin.sendMessage(player, Config.chatPrefix + message);
