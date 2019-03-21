@@ -42,6 +42,8 @@ public class Config {
     public static String listHeader;
     public static String listHeaderURL;
     public static String listHeaderHover;
+    public static String footerText = "[AcceptRules]";
+    public static String footerHover = "Accept the rules";
     public static String listPadding = "=";
     public static String listPrefix = "[&3{pos}&f]";
 
@@ -114,6 +116,8 @@ public class Config {
         listHeader = check(config.getNode("rules", "header", "message"), "", "This text is displayed above the rules in /rules").getString();
         listHeaderURL = check(config.getNode("rules", "header", "url"), "", "When players click the text set in message, they will be prompted to this URL (Must have http:// or https:// at the beginning)").getString();
         listHeaderHover = check(config.getNode("rules", "header", "hover"), "", "This message will be displayed when the player hovers over the header message.").getString();
+        footerText = check(config.getNode("rules", "footer", "text"), footerText, "Text for the /acceptrules button, leave blank to ignore").getString();
+        footerHover = check(config.getNode("rules", "footer", "hover"), footerHover).getString();
         listPadding = check(config.getNode("rules", "padding"), listPadding).getString();
         listPrefix = check(config.getNode("rules", "prefix"), listPrefix).getString();
 

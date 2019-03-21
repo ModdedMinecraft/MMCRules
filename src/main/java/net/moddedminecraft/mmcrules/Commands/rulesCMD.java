@@ -82,6 +82,15 @@ public class rulesCMD implements CommandExecutor {
                 .contents(contents)
                 .padding(plugin.fromLegacy(Config.listPadding));
 
+        if (!Config.footerText.isEmpty()) {
+            Text.Builder footer = Text.builder();
+            footer.append(plugin.fromLegacy(Config.footerText));
+            if (!Config.footerHover.isEmpty()) {
+                footer.onHover(TextActions.showText(plugin.fromLegacy(Config.footerHover)));
+            }
+            footer.onClick(TextActions.runCommand("/acceptrules"));
+            pb.footer(footer.build());
+        }
 
         if (!(src instanceof Player)) {
             pb.linesPerPage(-1);
