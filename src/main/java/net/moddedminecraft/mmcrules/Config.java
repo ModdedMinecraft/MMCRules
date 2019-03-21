@@ -1,7 +1,6 @@
 package net.moddedminecraft.mmcrules;
 
 
-import com.google.common.collect.Lists;
 import com.google.common.reflect.TypeToken;
 import net.moddedminecraft.mmcrules.Data.RulesData;
 import net.moddedminecraft.mmcrules.Data.RulesData.RulesDataSerializer;
@@ -34,7 +33,6 @@ public class Config {
     public static String rulesAlias;
 
     //rules
-    private static List<String> RulesData = Lists.newLinkedList();
     public static boolean informOnLogin = true;
     public static String rulesTitle = "Rules";
     public static List<String> playerCommands;
