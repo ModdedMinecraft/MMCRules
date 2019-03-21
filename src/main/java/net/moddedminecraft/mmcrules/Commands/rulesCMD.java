@@ -81,20 +81,21 @@ public class rulesCMD implements CommandExecutor {
                 .title(plugin.fromLegacy(Config.rulesTitle))
                 .contents(contents)
                 .padding(plugin.fromLegacy(Config.listPadding));
-
-        if (!Config.footerText.isEmpty()) {
-            Text.Builder footer = Text.builder();
-            footer.append(plugin.fromLegacy(Config.footerText));
-            if (!Config.footerHover.isEmpty()) {
-                footer.onHover(TextActions.showText(plugin.fromLegacy(Config.footerHover)));
-            }
-            footer.onClick(TextActions.runCommand("/acceptrules"));
-            pb.footer(footer.build());
-        }
-
         if (!(src instanceof Player)) {
             pb.linesPerPage(-1);
         } else {
+            Player player = (Player) src;
+            if (!Config.footerText.isEmpty()) {
+                Text.Builder footer = Text.builder();
+                footer.append(plugin.fromLegacy(Config.footerText));
+                if (!Config.footerHover.isEmpty()) {
+                    footer.onHover(TextActions.showText(plugin.fromLegacy(Config.footerHover)));
+                }
+                footer.onClick(TextActions.runCommand("/acceptrules"));
+                if (!plugin.getDataStore().getAccepted().contains(player.getUniqueId().toString())) {
+                    pb.footer(footer.build());
+                }
+            }
             if (!plugin.readRules.contains(src.getName())) {
                 plugin.readRules.add(src.getName());
             }
