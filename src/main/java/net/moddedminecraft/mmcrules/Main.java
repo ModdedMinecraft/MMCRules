@@ -1,5 +1,6 @@
 package net.moddedminecraft.mmcrules;
 
+import com.google.common.reflect.TypeToken;
 import com.google.inject.Inject;
 import net.moddedminecraft.mmcrules.Commands.ChildCommands.acceptFor;
 import net.moddedminecraft.mmcrules.Commands.ChildCommands.reset;
@@ -8,9 +9,13 @@ import net.moddedminecraft.mmcrules.Commands.ChildCommands.setTP;
 import net.moddedminecraft.mmcrules.Commands.acceptCMD;
 import net.moddedminecraft.mmcrules.Commands.mmcRulesCMD;
 import net.moddedminecraft.mmcrules.Commands.rulesCMD;
+import net.moddedminecraft.mmcrules.Data.RulesData;
 import net.moddedminecraft.mmcrules.Database.DataStoreManager;
 import net.moddedminecraft.mmcrules.Database.IDataStore;
+import ninja.leaping.configurate.ConfigurationNode;
+import ninja.leaping.configurate.hocon.HoconConfigurationLoader;
 import ninja.leaping.configurate.objectmapping.ObjectMappingException;
+import ninja.leaping.configurate.objectmapping.serialize.TypeSerializers;
 import org.bstats.sponge.Metrics2;
 import org.slf4j.Logger;
 import org.spongepowered.api.Sponge;
@@ -38,10 +43,7 @@ import org.spongepowered.api.text.serializer.TextSerializers;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 @Plugin(id = "mmcrules", name = "MMCRules", version = "2.0.3", description = "Force players to read and accept the rules.")
@@ -65,8 +67,6 @@ public class Main {
     @ConfigDir(sharedRoot = false)
     public Path configDir;
 
-    //public File userFile;
-
     public Config config;
 
     private DataStoreManager dataStoreManager;
@@ -75,12 +75,15 @@ public class Main {
 
     public List<String> readRules = new ArrayList<String>();
 
+    private LinkedHashMap<String, RulesData> rules;
+
     @Listener
     public void Init(GameInitializationEvent event) throws IOException, ObjectMappingException {
         Sponge.getEventManager().registerListeners(this, new PlayerListener(this));
+        TypeSerializers.getDefaultSerializers().registerType(TypeToken.of(RulesData.class), new RulesData.RulesDataSerializer());
         config = new Config(this);
         loadCommands();
-        //userFile = new File(configDir.toFile(), "users.dat");
+        loadData();
     }
 
     @Listener
@@ -103,6 +106,7 @@ public class Main {
         getUsersWhoReadRules().clear();
         this.config = new Config(this);
         loadDataStore();
+        loadData();
     }
 
     private void loadCommands() {
@@ -209,6 +213,28 @@ public class Main {
                 }
             }).delay(10, TimeUnit.SECONDS).name("mmcrules-s-sendInformOnLogin").submit(this);
         }
+    }
+
+    public HoconConfigurationLoader getItemDataLoader() {
+        return HoconConfigurationLoader.builder().setPath(defaultConf).build();
+    }
+
+    private void loadData() throws IOException, ObjectMappingException {
+        HoconConfigurationLoader loader = getItemDataLoader();
+        ConfigurationNode rootNode = loader.load();
+        List<RulesData> ruleslist = rootNode.getNode("list").getList(TypeToken.of(RulesData.class));
+        this.rules = new LinkedHashMap<String, RulesData>();
+        for (RulesData rule : ruleslist) {
+            addRule(rule);
+        }
+    }
+
+    public Collection<RulesData> getRulesData() {
+        return Collections.unmodifiableCollection(this.rules.values());
+    }
+
+    public RulesData addRule(RulesData rule) {
+        return this.rules.put(rule.getRule(), rule);
     }
 
     public Logger getLogger() {

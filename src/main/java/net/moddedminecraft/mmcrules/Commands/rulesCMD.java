@@ -2,6 +2,7 @@ package net.moddedminecraft.mmcrules.Commands;
 
 
 import net.moddedminecraft.mmcrules.Config;
+import net.moddedminecraft.mmcrules.Data.RulesData;
 import net.moddedminecraft.mmcrules.Main;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.CommandException;
@@ -18,6 +19,7 @@ import org.spongepowered.api.text.action.TextActions;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -31,7 +33,7 @@ public class rulesCMD implements CommandExecutor {
     @Override
     public CommandResult execute(CommandSource src, CommandContext args) throws CommandException {
 
-        List<String> rules = Config.ruleList;
+        Collection<RulesData> rules = plugin.getRulesData();
         List<Text> contents = new ArrayList<>();
 
         if (!Config.listHeader.isEmpty()) {
@@ -55,22 +57,31 @@ public class rulesCMD implements CommandExecutor {
             }
             contents.add(send.build());
         }
+        if (rules.isEmpty()) {
+            plugin.sendMessage(src, Config.chatPrefix + "&cThe server owner has not set any rules.");
+            return CommandResult.empty();
+        }
 
-        for (int i = 0; i < rules.size(); i++) {
-            if (rules.get(i).equals("") && rules.size() <= 1) {
-                plugin.sendMessage(src, Config.chatPrefix + "&cThe server owner has not set any rules.");
-                return CommandResult.empty();
-            } else {
-                Text.Builder send = Text.builder();
-                send.append(plugin.fromLegacy("&f[&3" + String.valueOf(i + 1) + "&f] &f" + rules.get(i)));
-                contents.add(send.build());
+        int num = 1;
+        for (RulesData rule : rules) {
+            Text.Builder send = Text.builder();
+            String prefix = "";
+            if (Config.listPrefix.isEmpty()) {
+                prefix = Config.listPrefix.replace("{pos}", String.valueOf(num)) + " ";
             }
+            send.append(plugin.fromLegacy(prefix + "&f" + rule.getRule()));
+            if (!rule.getDesc().isEmpty()) {
+                send.onHover(TextActions.showText(plugin.fromLegacy(rule.getDesc())));
+            }
+            num++;
+            contents.add(send.build());
         }
 
         PaginationList.Builder pb = Sponge.getServiceManager().provideUnchecked(PaginationService.class).builder()
                 .title(plugin.fromLegacy(Config.rulesTitle))
                 .contents(contents)
-                .padding(Text.of("="));
+                .padding(plugin.fromLegacy(Config.listPadding));
+
 
         if (!(src instanceof Player)) {
             pb.linesPerPage(-1);

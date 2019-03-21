@@ -3,13 +3,17 @@ package net.moddedminecraft.mmcrules;
 
 import com.google.common.collect.Lists;
 import com.google.common.reflect.TypeToken;
+import net.moddedminecraft.mmcrules.Data.RulesData;
+import net.moddedminecraft.mmcrules.Data.RulesData.RulesDataSerializer;
 import ninja.leaping.configurate.commented.CommentedConfigurationNode;
 import ninja.leaping.configurate.hocon.HoconConfigurationLoader;
 import ninja.leaping.configurate.loader.ConfigurationLoader;
 import ninja.leaping.configurate.objectmapping.ObjectMappingException;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 
 public class Config {
@@ -30,7 +34,7 @@ public class Config {
     public static String rulesAlias;
 
     //rules
-    public static List<String> ruleList = Lists.newArrayList("Be respectful.", "Be ethical.", "Use common sense.");
+    private static List<String> RulesData = Lists.newLinkedList();
     public static boolean informOnLogin = true;
     public static String rulesTitle = "Rules";
     public static List<String> playerCommands;
@@ -38,6 +42,8 @@ public class Config {
     public static String listHeader;
     public static String listHeaderURL;
     public static String listHeaderHover;
+    public static String listPadding = "=";
+    public static String listPrefix = "[&3{pos}&f]";
 
     //messages
     public static String acceptedMsg = "&cYou have successfully accepted the &6rules&c! Have fun!";
@@ -108,6 +114,8 @@ public class Config {
         listHeader = check(config.getNode("rules", "header", "message"), "", "This text is displayed above the rules in /rules").getString();
         listHeaderURL = check(config.getNode("rules", "header", "url"), "", "When players click the text set in message, they will be prompted to this URL (Must have http:// or https:// at the beginning)").getString();
         listHeaderHover = check(config.getNode("rules", "header", "hover"), "", "This message will be displayed when the player hovers over the header message.").getString();
+        listPadding = check(config.getNode("rules", "padding"), listPadding).getString();
+        listPrefix = check(config.getNode("rules", "prefix"), listPrefix).getString();
 
         //server
         server = check(config.getNode("server"), "Global", "Name of the server. Used for indavidual server identification. If a different name is set, It will check if the player has accepted the rules for that specific server instead of globally.  Default: \"Global\"").getString();
@@ -123,13 +131,12 @@ public class Config {
         mysqlPass = check(config.getNode("storage", "mysql", "password"), "pass", "Password for that user").getString();
         mysqlPrefix = check(config.getNode("storage", "mysql", "table-prefix"), "mmcrules_", "Prefix for the plugin tables").getString();
 
-
-        if (config.getNode("rules", "list").hasListChildren()) {
-            ruleList = Lists.newArrayList(config.getNode("rules", "list").getList(TypeToken.of(String.class)));
-        } else {
-            ruleList = config.getNode("rules", "list").setValue(ruleList).setComment("Commands to be run after the player accepts the rules, These commands are sent by the console ({player} will be replaced by the player's name)").getList(TypeToken.of(String.class));
+        if (!config.getNode("list").hasListChildren()) {
+            LinkedHashMap<String, RulesData> map = new LinkedHashMap<>();
+            map.put("Rule 1", new RulesData("Rule 1", "Example hover description, leave blank to ignore"));
+            map.put("Rule 2", new RulesData("Rule 2", "Example hover description, leave blank to ignore"));
+            config.getNode("list").setComment("List of /rules, with optional hover description (leave blank to ignore)").setValue(RulesDataSerializer.token, new ArrayList<RulesData>(map.values()));
         }
-
 
         informOnLogin = check(config.getNode("rules", "informOnLogin"), informOnLogin, "Do you want the player to be sent the above 'Inform' message after logging in?").getBoolean();
         rulesTitle = check(config.getNode("rules", "title"), rulesTitle, "The tile for the /rules").getString();
