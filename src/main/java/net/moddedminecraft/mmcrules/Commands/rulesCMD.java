@@ -66,7 +66,7 @@ public class rulesCMD implements CommandExecutor {
         for (RulesData rule : rules) {
             Text.Builder send = Text.builder();
             String prefix = "";
-            if (Config.listPrefix.isEmpty()) {
+            if (!Config.listPrefix.isEmpty()) {
                 prefix = Config.listPrefix.replace("{pos}", String.valueOf(num)) + " ";
             }
             send.append(plugin.fromLegacy(prefix + "&f" + rule.getRule()));
