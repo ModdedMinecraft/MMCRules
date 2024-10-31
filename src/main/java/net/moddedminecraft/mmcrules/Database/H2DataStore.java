@@ -33,7 +33,7 @@ public final class H2DataStore implements IDataStore {
         }
         try (Connection connection = getConnection()) {
             connection.createStatement().executeUpdate("CREATE TABLE IF NOT EXISTS " + Config.h2Prefix + "players ("
-                    + " playeruuid VARCHAR(60) NOT NULL PRIMARY KEY"
+                    + " playeruuid VARCHAR(36) NOT NULL PRIMARY KEY"
                     + ");");
 
             getConnection().commit();
@@ -75,10 +75,10 @@ public final class H2DataStore implements IDataStore {
     @Override
     public boolean removePlayer(String uuid) {
         try (Connection connection = getConnection()) {
-            PreparedStatement statement = connection.prepareStatement("DELETE FROM " + Config.h2Prefix + "players WHERE playeruuid = " + uuid + ";");
+            PreparedStatement statement = connection.prepareStatement("DELETE FROM " + Config.h2Prefix + "players WHERE playeruuid = '" + uuid + "';");
             return statement.executeUpdate() > 0;
         } catch (SQLException ex) {
-            plugin.getLogger().error("H2: Error adding playerdata", ex);
+            plugin.getLogger().error("H2: Error removing playerdata", ex);
         }
         return false;
     }
@@ -89,7 +89,7 @@ public final class H2DataStore implements IDataStore {
             PreparedStatement statement = connection.prepareStatement("TRUNCATE TABLE " + Config.h2Prefix + "players;");
             return statement.executeUpdate() > 0;
         } catch (SQLException ex) {
-            plugin.getLogger().error("H2: Error adding playerdata", ex);
+            plugin.getLogger().error("H2: Error removing all playerdata", ex);
         }
         return false;
     }
@@ -109,7 +109,7 @@ public final class H2DataStore implements IDataStore {
         try {
             HikariDataSource ds = new HikariDataSource();
             ds.setDriverClassName("org.h2.Driver");
-            ds.setJdbcUrl("jdbc:h2://" + new File(plugin.configDir.toFile(), Config.databaseFile).getAbsolutePath());
+            ds.setJdbcUrl("jdbc:h2:" + new File(plugin.configDir.toFile(), Config.databaseFile).getAbsolutePath());
             ds.setConnectionTimeout(1000);
             ds.setLoginTimeout(5);
             ds.setAutoCommit(true);

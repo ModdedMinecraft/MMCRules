@@ -2,11 +2,9 @@ package net.moddedminecraft.mmcrules.Commands.ChildCommands;
 
 import net.moddedminecraft.mmcrules.Config;
 import net.moddedminecraft.mmcrules.Main;
-import org.spongepowered.api.command.CommandException;
+import org.spongepowered.api.command.CommandExecutor;
 import org.spongepowered.api.command.CommandResult;
-import org.spongepowered.api.command.CommandSource;
-import org.spongepowered.api.command.args.CommandContext;
-import org.spongepowered.api.command.spec.CommandExecutor;
+import org.spongepowered.api.command.parameter.CommandContext;
 
 public class resetall implements CommandExecutor {
 
@@ -16,10 +14,10 @@ public class resetall implements CommandExecutor {
     }
 
     @Override
-    public CommandResult execute(CommandSource src, CommandContext args) throws CommandException {
+    public CommandResult execute(CommandContext context) {
         this.plugin.getUsersWhoReadRules().clear();
         this.plugin.getDataStore().clearList();
-        plugin.sendMessage(src, Config.chatPrefix + "All users have been cleared. Everyone has to re-accept the rules.");
+        context.cause().audience().sendMessage(plugin.fromLegacy(Config.chatPrefix + "All users have been cleared. Everyone has to re-accept the rules."));
         return CommandResult.success();
     }
 }

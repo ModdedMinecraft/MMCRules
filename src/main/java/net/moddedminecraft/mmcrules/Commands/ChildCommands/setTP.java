@@ -1,15 +1,16 @@
 package net.moddedminecraft.mmcrules.Commands.ChildCommands;
 
-import com.flowpowered.math.vector.Vector3d;
 import net.moddedminecraft.mmcrules.Config;
 import net.moddedminecraft.mmcrules.Main;
-import ninja.leaping.configurate.hocon.HoconConfigurationLoader;
-import org.spongepowered.api.command.CommandException;
+import org.spongepowered.api.command.CommandExecutor;
 import org.spongepowered.api.command.CommandResult;
-import org.spongepowered.api.command.CommandSource;
-import org.spongepowered.api.command.args.CommandContext;
-import org.spongepowered.api.command.spec.CommandExecutor;
-import org.spongepowered.api.entity.living.player.Player;
+import org.spongepowered.api.command.exception.CommandException;
+import org.spongepowered.api.command.parameter.CommandContext;
+import org.spongepowered.api.entity.living.player.server.ServerPlayer;
+import org.spongepowered.configurate.ConfigurateException;
+import org.spongepowered.configurate.hocon.HoconConfigurationLoader;
+import org.spongepowered.configurate.serialize.SerializationException;
+import org.spongepowered.math.vector.Vector3d;
 
 import java.io.IOException;
 
@@ -21,34 +22,35 @@ public class setTP implements CommandExecutor {
     }
 
     @Override
-    public CommandResult execute(CommandSource src, CommandContext args) throws CommandException {
-        if (!(src instanceof Player)) {
+    public CommandResult execute(CommandContext context) throws CommandException {
+        if (!(context.cause().root() instanceof ServerPlayer)) {
            throw new CommandException(plugin.fromLegacy(Config.chatPrefix + "You can only use this command as a player!"));
         }
-        Player player = (Player) src;
-        Vector3d position = player.getHeadRotation();
+        ServerPlayer player = (ServerPlayer) context.cause().root();
+        Vector3d position = player.headRotation().get();
 
-        Config.loader = HoconConfigurationLoader.builder().setPath(plugin.defaultConf).build();
+        Config.loader = HoconConfigurationLoader.builder().path(plugin.defaultConf).build();
         try {
             Config.config = Config.loader.load();
         } catch (IOException e) {
             e.printStackTrace();
         }
 
-        Config.config.getNode("teleport", "coordinates", "world").setValue(player.getWorld().getName());
-        Config.config.getNode("teleport", "coordinates", "posx").setValue(player.getLocation().getX());
-        Config.config.getNode("teleport", "coordinates", "posy").setValue(player.getLocation().getY());
-        Config.config.getNode("teleport", "coordinates", "posz").setValue(player.getLocation().getZ());
-        Config.config.getNode("teleport", "coordinates", "yaw").setValue(position.getY());
-        Config.config.getNode("teleport", "coordinates", "pitch").setValue(position.getX());
-
         try {
+            Config.config.node("teleport", "coordinates", "world").set(player.world().key().value());
+            Config.config.node("teleport", "coordinates", "posx").set(player.location().x());
+            Config.config.node("teleport", "coordinates", "posy").set(player.location().y());
+            Config.config.node("teleport", "coordinates", "posz").set(player.location().z());
+            Config.config.node("teleport", "coordinates", "yaw").set(position.y());
+            Config.config.node("teleport", "coordinates", "pitch").set(position.x());
             Config.loader.save(Config.config);
+            plugin.reloadConfig();
         } catch (IOException e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
 
-        plugin.sendMessage(src, Config.chatPrefix + "Teleport location has been set.");
+
+        player.sendMessage(plugin.fromLegacy(Config.chatPrefix + "Teleport location has been set."));
         return CommandResult.success();
     }
 }

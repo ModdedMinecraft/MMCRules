@@ -74,7 +74,7 @@ public final class MYSQLDataStore implements IDataStore  {
     @Override
     public boolean removePlayer(String uuid) {
         try (Connection connection = getConnection()) {
-            PreparedStatement statement = connection.prepareStatement("DELETE FROM " + Config.mysqlPrefix + "players WHERE playeruuid = " + uuid + ";");
+            PreparedStatement statement = connection.prepareStatement("DELETE FROM " + Config.mysqlPrefix + "players WHERE playeruuid = '" + uuid + "';");
             return statement.executeUpdate() > 0;
         } catch (SQLException ex) {
             plugin.getLogger().error("MySQL: Error removing playerdata", ex);
@@ -108,7 +108,7 @@ public final class MYSQLDataStore implements IDataStore  {
         try {
             HikariDataSource ds = new HikariDataSource();
             ds.setDriverClassName("org.mariadb.jdbc.Driver");
-            ds.setJdbcUrl("jdbc:mariadb://"
+            ds.setJdbcUrl("jdbc:mariadb:"
                     + Config.mysqlHost
                     + ":" + Config.mysqlPort
                     + "/" +  Config.mysqlDatabase);

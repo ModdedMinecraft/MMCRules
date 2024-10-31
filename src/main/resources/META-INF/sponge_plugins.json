@@ -1,0 +1,47 @@
+{
+  "loader": {
+    "name": "java_plain",
+    "version": "1.0"
+  },
+  "license": "GPL-3.0",
+  "plugins": [
+    {
+      "id": "mmcrules",
+      "name": "MMCRules",
+      "entrypoint": "net.moddedminecraft.mmcrules.Main",
+      "description": "Force players to read and accept the rules.",
+      "version": "3.0.0",
+      "branding": {},
+      "links": {
+        "source": "https://github.com/ModdedMinecraft/MMCRules",
+        "issues": "https://github.com/ModdedMinecraft/MMCRules/issues"
+      },
+      "contributors": [
+        {
+          "name": "Leelawd",
+          "description": "Lead Developer"
+        }
+      ],
+      "dependencies": [
+        {
+          "id": "spongeapi",
+          "version": "8.2.0",
+          "load-order": "after",
+          "optional": false
+        },
+        {
+          "id": "h2driver",
+          "version": "1.0.0",
+          "load-order": "after",
+          "optional": false
+        },
+        {
+          "id": "mysqldriver",
+          "version": "1.0.0",
+          "load-order": "after",
+          "optional": true
+        }
+      ]
+    }
+  ]
+}

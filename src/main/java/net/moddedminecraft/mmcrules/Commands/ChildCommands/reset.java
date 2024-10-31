@@ -2,14 +2,18 @@ package net.moddedminecraft.mmcrules.Commands.ChildCommands;
 
 import net.moddedminecraft.mmcrules.Config;
 import net.moddedminecraft.mmcrules.Main;
-import org.spongepowered.api.command.CommandException;
+import org.spongepowered.api.Server;
+import org.spongepowered.api.Sponge;
+import org.spongepowered.api.command.CommandExecutor;
 import org.spongepowered.api.command.CommandResult;
-import org.spongepowered.api.command.CommandSource;
-import org.spongepowered.api.command.args.CommandContext;
-import org.spongepowered.api.command.spec.CommandExecutor;
+import org.spongepowered.api.command.exception.CommandException;
+import org.spongepowered.api.command.parameter.CommandContext;
+import org.spongepowered.api.command.parameter.Parameter;
 import org.spongepowered.api.entity.living.player.User;
+import org.spongepowered.api.entity.living.player.server.ServerPlayer;
 
 import java.util.Optional;
+import java.util.concurrent.ExecutionException;
 
 public class reset implements CommandExecutor {
 
@@ -19,19 +23,26 @@ public class reset implements CommandExecutor {
     }
 
     @Override
-    public CommandResult execute(CommandSource src, CommandContext args) throws CommandException {
-        User user = args.<User>getOne("player").get();
+    public CommandResult execute(CommandContext context) throws CommandException {
+        Parameter.Value<ServerPlayer> playerParameter = Parameter.player().key("player").build();
 
-        Optional<User> op = plugin.getUser(user.getUniqueId());
+        final ServerPlayer userString = context.requireOne(playerParameter);
+        Optional<User> userOp;
+        try {
+            userOp = Sponge.server().userManager().load(userString.uniqueId()).get();
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException(e);
+        }
 
-        if (op.isPresent()) {
-            User player = op.get();
-            if (!plugin.getDataStore().getAccepted().contains(player.getUniqueId().toString())) {
-                throw new CommandException(plugin.fromLegacy(Config.chatPrefix + "User with the name " + player.getName() + " either has not been found or hasn't accepted the rules yet"));
+
+        if (userOp.isPresent()) {
+            User player = userOp.get();
+            if (!plugin.getDataStore().getAccepted().contains(player.uniqueId().toString())) {
+                throw new CommandException(plugin.fromLegacy(Config.chatPrefix + "User with the name " + player.name() + " either has not been found or hasn't accepted the rules yet"));
             }
-            plugin.getDataStore().removePlayer(player.getUniqueId().toString());
-            plugin.getUsersWhoReadRules().remove(player.getName());
-            plugin.sendMessage(src, Config.chatPrefix + "Player " + player.getName() + " has to re-accept the rules.");
+            plugin.getDataStore().removePlayer(player.uniqueId().toString());
+            plugin.getUsersWhoReadRules().remove(player.name());
+            context.cause().audience().sendMessage(plugin.fromLegacy(Config.chatPrefix + "Player " + player.name() + " has to re-accept the rules."));
             return CommandResult.success();
         } else {
             throw new CommandException(plugin.fromLegacy(Config.chatPrefix + "Unable to find player."));

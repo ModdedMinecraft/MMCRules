@@ -1,20 +1,24 @@
 package net.moddedminecraft.mmcrules.Commands;
 
 
+import net.kyori.adventure.audience.Audience;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.TextComponent;
+import net.kyori.adventure.text.event.ClickEvent;
+import net.kyori.adventure.text.event.HoverEvent;
 import net.moddedminecraft.mmcrules.Config;
 import net.moddedminecraft.mmcrules.Data.RulesData;
 import net.moddedminecraft.mmcrules.Main;
+import org.jetbrains.annotations.NotNull;
 import org.spongepowered.api.Sponge;
-import org.spongepowered.api.command.CommandException;
+import org.spongepowered.api.adventure.SpongeComponents;
+import org.spongepowered.api.command.CommandCause;
+import org.spongepowered.api.command.CommandExecutor;
 import org.spongepowered.api.command.CommandResult;
-import org.spongepowered.api.command.CommandSource;
-import org.spongepowered.api.command.args.CommandContext;
-import org.spongepowered.api.command.spec.CommandExecutor;
-import org.spongepowered.api.entity.living.player.Player;
+import org.spongepowered.api.command.exception.CommandException;
+import org.spongepowered.api.command.parameter.CommandContext;
+import org.spongepowered.api.entity.living.player.server.ServerPlayer;
 import org.spongepowered.api.service.pagination.PaginationList;
-import org.spongepowered.api.service.pagination.PaginationService;
-import org.spongepowered.api.text.Text;
-import org.spongepowered.api.text.action.TextActions;
 
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -31,16 +35,17 @@ public class rulesCMD implements CommandExecutor {
     }
 
     @Override
-    public CommandResult execute(CommandSource src, CommandContext args) throws CommandException {
+    public CommandResult execute(CommandContext context) throws CommandException {
 
         Collection<RulesData> rules = plugin.getRulesData();
-        List<Text> contents = new ArrayList<>();
+        List<Component> contents = new ArrayList<>();
+        Audience audience = context.cause().audience();
 
         if (!Config.listHeader.isEmpty()) {
-            Text.Builder send = Text.builder();
+            TextComponent.@NotNull Builder send = Component.text();
             send.append(plugin.fromLegacy(Config.listHeader));
             if (!Config.listHeaderHover.isEmpty()) {
-                send.onHover(TextActions.showText(plugin.fromLegacy(Config.listHeaderHover)));
+                send.hoverEvent(HoverEvent.showText(plugin.fromLegacy(Config.listHeaderHover)));
             }
             if (!Config.listHeaderURL.isEmpty()) {
                 URL url = null;
@@ -50,65 +55,64 @@ public class rulesCMD implements CommandExecutor {
                     e.printStackTrace();
                 }
                 if (url != null) {
-                    send.onClick(TextActions.openUrl(url));
+                    send.clickEvent(ClickEvent.openUrl(url));
                 } else {
-                    send.onClick(TextActions.executeCallback(invalid()));
+                    send.clickEvent(SpongeComponents.executeCallback(invalid()));
                 }
             }
             contents.add(send.build());
         }
         if (rules.isEmpty()) {
-            plugin.sendMessage(src, Config.chatPrefix + "&cThe server owner has not set any rules.");
-            return CommandResult.empty();
+            return CommandResult.error(plugin.fromLegacy(Config.chatPrefix + "&cThe server owner has not set any rules."));
         }
 
         int num = 1;
         for (RulesData rule : rules) {
-            Text.Builder send = Text.builder();
+            TextComponent.@NotNull Builder send = Component.text();
             String prefix = "";
             if (!Config.listPrefix.isEmpty()) {
                 prefix = Config.listPrefix.replace("{pos}", String.valueOf(num)) + " ";
             }
             send.append(plugin.fromLegacy(prefix + "&f" + rule.getRule()));
             if (!rule.getDesc().isEmpty()) {
-                send.onHover(TextActions.showText(plugin.fromLegacy(rule.getDesc())));
+                send.hoverEvent(HoverEvent.showText(plugin.fromLegacy(rule.getDesc())));
             }
             num++;
             contents.add(send.build());
         }
 
-        PaginationList.Builder pb = Sponge.getServiceManager().provideUnchecked(PaginationService.class).builder()
+        PaginationList.Builder pb = Sponge.serviceProvider().paginationService().builder()
                 .title(plugin.fromLegacy(Config.rulesTitle))
                 .contents(contents)
                 .padding(plugin.fromLegacy(Config.listPadding));
-        if (!(src instanceof Player)) {
+        if (!(context.cause().root() instanceof ServerPlayer)) {
             pb.linesPerPage(-1);
         } else {
-            Player player = (Player) src;
+            ServerPlayer player = (ServerPlayer) context.cause().root();
             if (!Config.footerText.isEmpty()) {
-                Text.Builder footer = Text.builder();
+                TextComponent.@NotNull Builder footer = Component.text();
                 footer.append(plugin.fromLegacy(Config.footerText));
                 if (!Config.footerHover.isEmpty()) {
-                    footer.onHover(TextActions.showText(plugin.fromLegacy(Config.footerHover)));
+                    footer.hoverEvent(HoverEvent.showText(plugin.fromLegacy(Config.footerHover)));
                 }
-                footer.onClick(TextActions.runCommand("/acceptrules"));
-                if (!plugin.getDataStore().getAccepted().contains(player.getUniqueId().toString())) {
+                footer.clickEvent(ClickEvent.runCommand("/acceptrules"));
+                if (!plugin.getDataStore().getAccepted().contains(player.uniqueId().toString())) {
                     pb.footer(footer.build());
                 }
             }
-            if (!plugin.readRules.contains(src.getName())) {
-                plugin.readRules.add(src.getName());
+            if (!plugin.readRules.contains(player.name())) {
+                plugin.readRules.add(player.name());
             }
         }
 
-        pb.sendTo(src);
+        pb.sendTo(audience);
 
         return CommandResult.success();
     }
 
-    private Consumer<CommandSource> invalid() {
+    private Consumer<CommandCause> invalid() {
         return consumer -> {
-            plugin.sendMessage(consumer, "&4URL is invalid, Please report this to an admin.");
+            consumer.audience().sendMessage(plugin.fromLegacy("&4URL is invalid, Please report this to an admin."));
         };
     }
 }

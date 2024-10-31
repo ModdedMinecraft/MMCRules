@@ -1,7 +1,8 @@
 package net.moddedminecraft.mmcrules;
 
-import com.google.common.reflect.TypeToken;
 import com.google.inject.Inject;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import net.moddedminecraft.mmcrules.Commands.ChildCommands.acceptFor;
 import net.moddedminecraft.mmcrules.Commands.ChildCommands.reset;
 import net.moddedminecraft.mmcrules.Commands.ChildCommands.resetall;
@@ -10,54 +11,41 @@ import net.moddedminecraft.mmcrules.Commands.acceptCMD;
 import net.moddedminecraft.mmcrules.Commands.mmcRulesCMD;
 import net.moddedminecraft.mmcrules.Commands.rulesCMD;
 import net.moddedminecraft.mmcrules.Data.RulesData;
+import net.moddedminecraft.mmcrules.Data.RulesData.RulesDataSerializer;
 import net.moddedminecraft.mmcrules.Database.DataStoreManager;
 import net.moddedminecraft.mmcrules.Database.IDataStore;
-import ninja.leaping.configurate.ConfigurationNode;
-import ninja.leaping.configurate.hocon.HoconConfigurationLoader;
-import ninja.leaping.configurate.objectmapping.ObjectMappingException;
-import ninja.leaping.configurate.objectmapping.serialize.TypeSerializers;
-import org.slf4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.spongepowered.api.Server;
 import org.spongepowered.api.Sponge;
-import org.spongepowered.api.command.CommandManager;
-import org.spongepowered.api.command.CommandSource;
-import org.spongepowered.api.command.args.GenericArguments;
-import org.spongepowered.api.command.spec.CommandSpec;
+import org.spongepowered.api.command.Command;
+import org.spongepowered.api.command.parameter.Parameter;
 import org.spongepowered.api.config.ConfigDir;
 import org.spongepowered.api.config.DefaultConfig;
-import org.spongepowered.api.data.key.Keys;
-import org.spongepowered.api.entity.living.player.Player;
-import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.event.Listener;
-import org.spongepowered.api.event.filter.cause.Root;
-import org.spongepowered.api.event.game.GameReloadEvent;
-import org.spongepowered.api.event.game.state.GameAboutToStartServerEvent;
-import org.spongepowered.api.event.game.state.GameInitializationEvent;
-import org.spongepowered.api.event.game.state.GameStartedServerEvent;
-import org.spongepowered.api.event.network.ClientConnectionEvent;
-import org.spongepowered.api.plugin.Plugin;
-import org.spongepowered.api.service.user.UserStorageService;
-import org.spongepowered.api.text.Text;
-import org.spongepowered.api.text.serializer.TextSerializers;
+import org.spongepowered.api.event.lifecycle.ConstructPluginEvent;
+import org.spongepowered.api.event.lifecycle.RefreshGameEvent;
+import org.spongepowered.api.event.lifecycle.RegisterCommandEvent;
+import org.spongepowered.api.event.lifecycle.StartedEngineEvent;
+import org.spongepowered.configurate.ConfigurationNode;
+import org.spongepowered.configurate.hocon.HoconConfigurationLoader;
+import org.spongepowered.configurate.serialize.TypeSerializerCollection;
+import org.spongepowered.plugin.PluginContainer;
+import org.spongepowered.plugin.builtin.jvm.Plugin;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 
-@Plugin(id = "mmcrules", name = "MMCRules", version = "2.1.1", description = "Force players to read and accept the rules.")
+@Plugin("mmcrules")
 public class Main {
 
-    @Inject
-    private Logger logger;
+    public static final Logger logger = LogManager.getLogger("MMCRules");
 
     @Inject
     @DefaultConfig(sharedRoot = false)
     public Path defaultConf;
-
-    @Inject
-    @DefaultConfig(sharedRoot = false)
-    public File defaultConfFile;
 
     @Inject
     @ConfigDir(sharedRoot = false)
@@ -65,107 +53,114 @@ public class Main {
 
     public Config config;
 
-    private DataStoreManager dataStoreManager;
+    private TypeSerializerCollection ruleSerializer;
 
-    private CommandManager cmdManager = Sponge.getCommandManager();
+    private DataStoreManager dataStoreManager;
 
     public List<String> readRules = new ArrayList<String>();
 
     private LinkedHashMap<String, RulesData> rules;
 
+    public final PluginContainer container;
+
+    @Inject
+    public Main(final PluginContainer container) {
+        this.container = container;
+    }
+
     @Listener
-    public void Init(GameInitializationEvent event) throws IOException, ObjectMappingException {
-        Sponge.getEventManager().registerListeners(this, new PlayerListener(this));
-        TypeSerializers.getDefaultSerializers().registerType(TypeToken.of(RulesData.class), new RulesData.RulesDataSerializer());
-        config = new Config(this);
-        loadCommands();
+    public void onServerAboutStart(ConstructPluginEvent event) throws IOException {
+        Sponge.eventManager().registerListeners(container, new PlayerListener(this));
+        ruleSerializer = TypeSerializerCollection.builder().register(RulesData.class, new RulesDataSerializer()).build();
+        reloadConfig();
         loadData();
     }
 
     @Listener
-    public void onServerAboutStart(GameAboutToStartServerEvent event) {
+    public void onServerStart(StartedEngineEvent<Server> event) {
         dataStoreManager = new DataStoreManager(this);
         if (dataStoreManager.load()) {
             getLogger().info("MMCRules datastore Loaded");
         } else {
             getLogger().error("Unable to load a datastore please check your Console/Config!");
         }
-    }
-
-    @Listener
-    public void onServerStart(GameStartedServerEvent event) throws IOException {
         logger.info("MMCRules Loaded");
     }
 
     @Listener
-    public void onPluginReload(GameReloadEvent event) throws IOException, ObjectMappingException {
+    public void onPluginReload(RefreshGameEvent event) throws IOException {
         getUsersWhoReadRules().clear();
-        this.config = new Config(this);
+        reloadConfig();
         loadDataStore();
         loadData();
+        logger.info("MMCRules Re-Loaded");
     }
 
-    private void loadCommands() {
-
+    @Listener
+    public void onRegisterSpongeCommand(final RegisterCommandEvent<Command.Parameterized> event) {
         // /mmcrules acceptfor [player]
-        CommandSpec acceptfor = CommandSpec.builder()
-                .description(Text.of("Accept the rules for a specified player."))
+        Command.Parameterized AcceptForCmd = Command.builder()
+                .shortDescription(Component.text("Accept the rules for a specified player."))
                 .executor(new acceptFor(this))
-                .arguments(GenericArguments.player(Text.of("player")))
+                .addParameter(Parameter.player().key("player").build())
                 .permission("mmcrules.commands.acceptfor")
                 .build();
 
         // /mmcrules reset [player]
-        CommandSpec reset = CommandSpec.builder()
-                .description(Text.of("Force a player to read and accept the rules again."))
+        Command.Parameterized ResetCmd = Command.builder()
+                .shortDescription(Component.text("Force a player to read and accept the rules again."))
                 .executor(new reset(this))
-                .arguments(GenericArguments.user(Text.of("player")))
+                .addParameter(Parameter.player().key("player").build())
                 .permission("mmcrules.commands.reset")
                 .build();
 
         // /mmcrules resetall
-        CommandSpec resetall = CommandSpec.builder()
-                .description(Text.of("Force all players to read and accept the rules again."))
+        Command.Parameterized ResetAllCmd = Command.builder()
+                .shortDescription(Component.text("Force all players to read and accept the rules again."))
                 .executor(new resetall(this))
                 .permission("mmcrules.commands.resetall")
                 .build();
 
         // /mmcrules settp
-        CommandSpec settp = CommandSpec.builder()
-                .description(Text.of("Set the teleport location for /acceptrules"))
+        Command.Parameterized SetTPCmd = Command.builder()
+                .shortDescription(Component.text("Set the teleport location for /acceptrules"))
                 .executor(new setTP(this))
                 .permission("mmcrules.commands.settp")
                 .build();
 
         // /mmcrules
-        CommandSpec mmcRules = CommandSpec.builder()
-                .description(Text.of("See the list of rules for the server."))
-                .executor(new mmcRulesCMD(this))
-                .child(settp, "settp")
-                .child(resetall, "resetall")
-                .child(reset, "reset")
-                .child(acceptfor, "acceptfor")
-                .build();
-
-        // /rules
-        CommandSpec rules = CommandSpec.builder()
-                .description(Text.of("See the list of rules for the server."))
-                .executor(new rulesCMD(this))
-                .build();
+        event.register(this.container,
+                Command.builder()
+                        .shortDescription(Component.text("See the list of rules for the server."))
+                        .executor(new mmcRulesCMD(this))
+                        .addChild(SetTPCmd, "settp")
+                        .addChild(ResetAllCmd, "resetall")
+                        .addChild(ResetCmd, "reset")
+                        .addChild(AcceptForCmd, "acceptfor")
+                        .build(), "mmcrules", "mmcr"
+        );
 
         // /acceptrules
-        CommandSpec acceptRules = CommandSpec.builder()
-                .description(Text.of("Accept the rules for the server"))
-                .executor(new acceptCMD(this))
-                .build();
+        event.register(this.container,
+                Command.builder()
+                    .shortDescription(Component.text("Accept the rules for the server"))
+                    .executor(new acceptCMD(this))
+                    .build(), "acceptrules"
+        );
 
-        if (!Config.rulesAlias.isEmpty()) {
-            cmdManager.register(this, rules, "rules", Config.rulesAlias);
-        } else {
-            cmdManager.register(this, rules, "rules");
-        }
-        cmdManager.register(this, acceptRules, "acceptrules");
-        cmdManager.register(this, mmcRules, "mmcrules", "mmcr");
+        // /rules
+        event.register(this.container,
+                Command.builder()
+                    .shortDescription(Component.text("See the list of rules for the server."))
+                    .executor(new rulesCMD(this))
+                    .build(), "rules", Config.rulesAlias
+        );
+
+
+    }
+
+    public void reloadConfig() throws IOException {
+        config = new Config(this);
     }
 
     public void loadDataStore() {
@@ -184,42 +179,21 @@ public class Main {
         return dataStoreManager.getDataStore();
     }
 
-    @Listener
-    public void onPlayerLogin(ClientConnectionEvent.Join event, @Root Player player) {
-        if (Config.vanishBeforeAccept) {
-            if (!getDataStore().getAccepted().contains(player.getUniqueId().toString())) {
-                Sponge.getScheduler().createTaskBuilder().execute(new Runnable() {
-
-                    public void run() {
-                        player.offer(Keys.INVISIBLE, true);
-                        player.offer(Keys.VANISH_IGNORES_COLLISION, true);
-                        player.offer(Keys.VANISH_PREVENTS_TARGETING, true);
-                    }
-                }).delay(1, TimeUnit.SECONDS).name("mmcrules-s-setPlayerInvisible").submit(this);
-            }
-        }
-
-        if (Config.informOnLogin && !player.hasPermission("mmcrules.bypass")) {
-            if (getDataStore().getAccepted().contains(player.getUniqueId().toString())) {
-                return;
-            }
-            Sponge.getScheduler().createTaskBuilder().execute(new Runnable() {
-                public void run() {
-                    sendMessage(player, Config.chatPrefix + Config.informMsg);
-                }
-            }).delay(10, TimeUnit.SECONDS).name("mmcrules-s-sendInformOnLogin").submit(this);
-        }
+    public HoconConfigurationLoader getRuleLoader() {
+        return HoconConfigurationLoader.builder().path(defaultConf).build();
     }
 
-    public HoconConfigurationLoader getItemDataLoader() {
-        return HoconConfigurationLoader.builder().setPath(defaultConf).build();
-    }
-
-    private void loadData() throws IOException, ObjectMappingException {
-        HoconConfigurationLoader loader = getItemDataLoader();
+    private void loadData() throws IOException {
+        HoconConfigurationLoader loader = getRuleLoader();
         ConfigurationNode rootNode = loader.load();
-        List<RulesData> ruleslist = rootNode.getNode("list").getList(TypeToken.of(RulesData.class));
-        this.rules = new LinkedHashMap<String, RulesData>();
+        @Nullable List<RulesData> ruleslist = new ArrayList<>();
+        List<? extends ConfigurationNode> ruleConfigNode = rootNode.node("list").childrenList();
+        for (ConfigurationNode ruleList : ruleConfigNode) {
+            String rule = ruleList.node("rule").getString();
+            String desc = ruleList.node("desc").getString();
+            ruleslist.add(new RulesData(rule, desc));
+        }
+        this.rules = new LinkedHashMap<>();
         for (RulesData rule : ruleslist) {
             addRule(rule);
         }
@@ -237,17 +211,8 @@ public class Main {
         return logger;
     }
 
-    public Optional<User> getUser(UUID uuid) {
-        Optional<UserStorageService> userStorage = Sponge.getServiceManager().provide(UserStorageService.class);
-        return userStorage.get().get(uuid);
-    }
-
-    public void sendMessage(CommandSource sender, String message) {
-        sender.sendMessage(fromLegacy(message));
-    }
-
-    public Text fromLegacy(String legacy) {
-        return TextSerializers.FORMATTING_CODE.deserializeUnchecked(legacy);
+    public Component fromLegacy(String legacy) {
+        return LegacyComponentSerializer.legacyAmpersand().deserialize(legacy);
     }
 
 }

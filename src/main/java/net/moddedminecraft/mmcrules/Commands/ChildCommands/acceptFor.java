@@ -3,12 +3,12 @@ package net.moddedminecraft.mmcrules.Commands.ChildCommands;
 import net.moddedminecraft.mmcrules.Config;
 import net.moddedminecraft.mmcrules.Main;
 import org.spongepowered.api.Sponge;
-import org.spongepowered.api.command.CommandException;
+import org.spongepowered.api.command.CommandExecutor;
 import org.spongepowered.api.command.CommandResult;
-import org.spongepowered.api.command.CommandSource;
-import org.spongepowered.api.command.args.CommandContext;
-import org.spongepowered.api.command.spec.CommandExecutor;
-import org.spongepowered.api.entity.living.player.Player;
+import org.spongepowered.api.command.exception.CommandException;
+import org.spongepowered.api.command.parameter.CommandContext;
+import org.spongepowered.api.command.parameter.Parameter;
+import org.spongepowered.api.entity.living.player.server.ServerPlayer;
 
 public class acceptFor implements CommandExecutor {
 
@@ -18,17 +18,18 @@ public class acceptFor implements CommandExecutor {
     }
 
     @Override
-    public CommandResult execute(CommandSource src, CommandContext args) throws CommandException {
-        Player player = args.<Player>getOne("player").get();
+    public CommandResult execute(CommandContext context) throws CommandException {
+        Parameter.Value<ServerPlayer> playerParameter = Parameter.player().key("player").build();
+        ServerPlayer player = context.requireOne(playerParameter);
 
         if (player == null) {
-            throw new CommandException(plugin.fromLegacy(Config.chatPrefix + "Player by that name not found. (is he online?)"));
+            throw new CommandException(plugin.fromLegacy(Config.chatPrefix + "Player by that name not found. (are they online?)"));
         }
-        if (plugin.getDataStore().getAccepted().contains(player.getUniqueId().toString())) {
-            throw new CommandException(plugin.fromLegacy(Config.chatPrefix + player.getName()+ " has already accepted the rules!"));
+        if (plugin.getDataStore().getAccepted().contains(player.uniqueId().toString())) {
+            throw new CommandException(plugin.fromLegacy(Config.chatPrefix + player.name()+ " has already accepted the rules!"));
         }
-        Sponge.getCommandManager().process(player, "acceptrules");
-        plugin.sendMessage(src, Config.chatPrefix + "Performed /acceptrules on " + player.getName());
+        Sponge.server().commandManager().process(player, "acceptrules");
+        context.cause().audience().sendMessage(plugin.fromLegacy(Config.chatPrefix + "Performed /acceptrules on " + player.name()));
         return CommandResult.success();
     }
 }

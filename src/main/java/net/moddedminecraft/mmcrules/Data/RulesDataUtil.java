@@ -1,5 +1,6 @@
 package net.moddedminecraft.mmcrules.Data;
 
+
 public class RulesDataUtil {
 
     protected String rule, desc;
